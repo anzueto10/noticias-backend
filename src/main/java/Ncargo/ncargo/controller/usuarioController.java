@@ -1,6 +1,9 @@
 package Ncargo.ncargo.controller;
+
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -30,14 +33,22 @@ public class usuarioController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-
     @PostMapping("/register")
     public ResponseEntity<?> registrarUsuario(@RequestBody ususarioModel usuario) {
+        // Verificar si el correo ya está en uso
+        Optional<ususarioModel> existingUser = usuarioRepository.findByCorreo(usuario.getCorreo());
+        if (existingUser.isPresent()) {
+            Map<String, String> response = new HashMap<>();
+            response.put("mensaje", "El correo ya está en uso");
+            return ResponseEntity.status(400).body(response);
+        }
+
         // Cifrar la contraseña antes de guardarla en la base de datos
         usuario.setContra(passwordEncoder.encode(usuario.getContra()));
         usuarioRepository.save(usuario);
+
         Map<String, String> response = new HashMap<>();
-            response.put("mensaje", "Usuario registrado con éxito");
+        response.put("mensaje", "Usuario registrado con éxito");
         return ResponseEntity.ok(response);
     }
 
@@ -50,7 +61,7 @@ public class usuarioController {
 
             // Si la autenticación es exitosa, generar el token JWT
             final String jwt = jwtUtil.generateToken(loginRequest.getCorreo());
-             Map<String, String> response = new HashMap<>();
+            Map<String, String> response = new HashMap<>();
             response.put("token", jwt);
             return ResponseEntity.ok(response);
 
